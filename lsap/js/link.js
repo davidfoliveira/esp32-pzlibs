@@ -2,8 +2,7 @@
 // link.js — the gateway side of LSAP for ONE node: sequence numbers, retry-until-ACK
 // for the messages we send, ACKing + de-duplicating the messages the node sends, and
 // the optional encryption layer. Part of the LSAP library (with lsap.js): device-agnostic,
-// canonical source github.com/davidfoliveira/esp32-pzlibs (lsap/js), copied between projects —
-// never edit a copy. See docs/LSAP.md.
+// github.com/davidfoliveira/esp32-pzlibs (lsap/js). See docs/LSAP.md.
 //
 // Transport-agnostic: the owner supplies `send(frameBuffer)` (the radio bridge) and
 // feeds received frames to receive().

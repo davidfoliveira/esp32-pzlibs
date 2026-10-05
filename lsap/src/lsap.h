@@ -1,9 +1,9 @@
 // lsap.h — LSAP, the protocol over LoRa, plus its optional encryption layer ("LSAP-ENC").
 //
-// THE LSAP LIBRARY: lsap.h, lsap.cpp and lsap_crypto.cpp. Canonical source:
-// github.com/davidfoliveira/esp32-pzlibs (lsap/). It is not shared code — it is COPIED,
-// verbatim, into every project that speaks LSAP (a node, a gateway, ...).
-// Never edit a copy: change the canonical source, bump LSAP_VERSION, and re-copy.
+// THE LSAP LIBRARY (an Arduino library): lsap.h, lsap.cpp and lsap_crypto.cpp. Home:
+// github.com/davidfoliveira/esp32-pzlibs (lsap/). Projects that speak LSAP (a node, a gateway,
+// ...) depend on it as a library — `#include <lsap.h>` — and never carry their own copy.
+// Change it here and bump LSAP_VERSION (and library.properties, package.json, js/lsap.js).
 //
 // Device-agnostic: this library knows frames, flags, sequence numbers, ACKs, the duplicate
 // cache and the encryption/MAC layer, and nothing about what any device puts in a message

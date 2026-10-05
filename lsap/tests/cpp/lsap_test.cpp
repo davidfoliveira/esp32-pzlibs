@@ -1,9 +1,9 @@
-// Host-side unit test for the LSAP library (cpp/lsap.h, lsap.cpp): framing, the optional
+// Host-side unit test for the LSAP library (src/lsap.h, lsap.cpp): framing, the optional
 // encryption/MAC layer, and the duplicate cache. Device-agnostic — message bodies are arbitrary
 // bytes here. Uses OpenSSL for the two crypto primitives the device implements with mbedtls
 // (lsap_crypto.cpp). Run everything with ../test.sh, or by hand (macOS/Homebrew):
-//   g++ -std=c++17 -Wall -I lsap/cpp -I/opt/homebrew/opt/openssl@3/include \
-//       lsap/tests/cpp/lsap_test.cpp lsap/cpp/lsap.cpp \
+//   g++ -std=c++17 -Wall -I lsap/src -I/opt/homebrew/opt/openssl@3/include \
+//       lsap/tests/cpp/lsap_test.cpp lsap/src/lsap.cpp \
 //       -L/opt/homebrew/opt/openssl@3/lib -lcrypto -o /tmp/lsap_test && /tmp/lsap_test
 #include "lsap.h"
 #include <openssl/evp.h>

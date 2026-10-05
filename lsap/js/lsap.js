@@ -1,9 +1,8 @@
 'use strict';
 // lsap.js — the LSAP library for Node: frame codec + the optional "Encryption over LSAP"
-// layer. Device-agnostic. Canonical source: github.com/davidfoliveira/esp32-pzlibs (lsap/js);
-// COPIED between projects, not shared — never edit a copy: change the canonical source, bump
-// LSAP_VERSION, and re-copy. The C++ counterpart is lsap/cpp/lsap.{h,cpp}. Specs: lsap/docs
-// (LSAP.md, LSAP-ENC.md). Multi-byte fields are little-endian.
+// layer. Device-agnostic. Home: github.com/davidfoliveira/esp32-pzlibs (lsap/js), used as the
+// "lsap" npm package (main: js/index.js) — never copied. The C++ counterpart is lsap/src/
+// lsap.{h,cpp}. Specs: lsap/docs (LSAP.md, LSAP-ENC.md). Multi-byte fields are little-endian.
 const crypto = require('crypto');
 
 const LSAP_VERSION = '1.0.0';

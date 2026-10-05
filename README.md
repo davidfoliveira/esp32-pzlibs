@@ -1,8 +1,8 @@
 # esp32-pzlibs
 
 Small, device-agnostic libraries used by my ESP32 projects. Each library lives in its own folder,
-is versioned, and is **copied** into the projects that use it — never shared by reference and never
-edited in place. Change it here, bump its version, re-copy.
+is versioned, and is used by the projects as a dependency (an Arduino library for firmware, an npm
+package for Node) — never copied. Change it here, bump its version.
 
 | Library | What it is |
 |---------|------------|

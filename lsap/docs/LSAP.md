@@ -11,10 +11,9 @@ the messages mean:
   it answers. That belongs to the device's project, not to this library.
 
 Multi-byte fields are **little-endian**. The reference implementations are
-[`cpp/`](../cpp) (`lsap.h`, `lsap.cpp`, and `lsap_crypto.cpp` for the ESP32's mbedtls; no
+[`src/`](../src) (`lsap.h`, `lsap.cpp`, and `lsap_crypto.cpp` for the ESP32's mbedtls; no
 Arduino dependency) and [`js/`](../js) (`lsap.js` codec, `link.js` gateway-side endpoint).
-They are checked by [`tests/`](../tests); the library is copied into projects, see the
-[README](../README.md).
+They are checked by [`tests/`](../tests); see the [README](../README.md) for using it.
 
 ## Frame
 

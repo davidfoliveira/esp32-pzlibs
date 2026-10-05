@@ -9,7 +9,7 @@ const keys = lsap.deriveKeys('secret');
 const BODY = hex('01 02 01 58 02');          // arbitrary example bytes
 const T = 0x72;
 
-// These frames were produced by the C++ library (cpp/lsap.cpp); the first one was also
+// These frames were produced by the C++ library (src/lsap.cpp); the first one was also
 // cross-checked with Python's hmac + `openssl enc -aes-128-ctr`.
 test('encrypted frame matches the C++ known-answer frame', () => {
   const frame = lsap.encode({ type: T, id: 7, seq: 42, flags: lsap.F.DOWN | lsap.F.ACKREQ, body: BODY, keys, nonce: hex('01020304') });

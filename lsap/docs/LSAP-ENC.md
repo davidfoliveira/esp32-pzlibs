@@ -88,7 +88,7 @@ cache with fake `seq`s and make real messages look like duplicates.
   header     |  ciphertext    |    nonce    |    MAC
 ```
 
-Implementation: [`cpp/lsap.cpp`](../cpp/lsap.cpp) (`deriveKeys`, `encode`, `verify`,
-`openBody`) on the primitives in [`cpp/lsap_crypto.cpp`](../cpp/lsap_crypto.cpp) (mbedtls on
+Implementation: [`src/lsap.cpp`](../src/lsap.cpp) (`deriveKeys`, `encode`, `verify`,
+`openBody`) on the primitives in [`src/lsap_crypto.cpp`](../src/lsap_crypto.cpp) (mbedtls on
 the ESP32), and [`js/lsap.js`](../js/lsap.js) (Node `crypto`). Both test suites check this
 frame (the C++ one with OpenSSL).

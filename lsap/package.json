@@ -1,0 +1,11 @@
+{
+  "name": "lsap",
+  "version": "1.0.0",
+  "description": "LSAP: a small, device-agnostic protocol over LoRa (frames, ACKs, retries, duplicates) with optional encryption",
+  "main": "js/index.js",
+  "files": ["js"],
+  "scripts": { "test": "node --test tests/js/*.test.js" },
+  "engines": { "node": ">=18" },
+  "license": "UNLICENSED",
+  "private": true
+}

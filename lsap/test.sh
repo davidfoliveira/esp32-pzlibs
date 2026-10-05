@@ -6,12 +6,12 @@ cd "$(dirname "${BASH_SOURCE[0]}")"
 
 OPENSSL="${OPENSSL_PREFIX:-}"
 if [ -z "$OPENSSL" ] && command -v brew >/dev/null 2>&1; then OPENSSL="$(brew --prefix openssl@3 2>/dev/null || true)"; fi
-CXXFLAGS=(-std=c++17 -Wall -I cpp)
+CXXFLAGS=(-std=c++17 -Wall -I src)
 LDFLAGS=(-lcrypto)
 if [ -n "$OPENSSL" ]; then CXXFLAGS+=(-I"$OPENSSL/include"); LDFLAGS=(-L"$OPENSSL/lib" -lcrypto); fi
 
 echo "» C++"
-g++ "${CXXFLAGS[@]}" tests/cpp/lsap_test.cpp cpp/lsap.cpp "${LDFLAGS[@]}" -o /tmp/lsap_test
+g++ "${CXXFLAGS[@]}" tests/cpp/lsap_test.cpp src/lsap.cpp "${LDFLAGS[@]}" -o /tmp/lsap_test
 /tmp/lsap_test
 
 echo "» Node"
