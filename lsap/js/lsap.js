@@ -5,11 +5,16 @@
 // lsap.{h,cpp}. Specs: lsap/docs (LSAP.md, LSAP-ENC.md). Multi-byte fields are little-endian.
 const crypto = require('crypto');
 
-const LSAP_VERSION = '1.0.0';
+const LSAP_VERSION = '1.1.0';
 const HDR_LEN = 4;
 const NONCE_LEN = 4;
 const MAC_LEN = 4;
 const SEC_LEN = NONCE_LEN + MAC_LEN;
+
+// Device types carry the device family in the high nibble; a frame is LSAP only if its first
+// byte is in this family (lets a gateway tell LSAP from other protocols on the same radio).
+const DEVICE_FAMILY = 0x7;
+const isLsapType = (type) => (type >> 4) === DEVICE_FAMILY;
 
 const F = Object.freeze({ ACK: 0x01, ENC: 0x02, DOWN: 0x04, ACKREQ: 0x08 });
 
@@ -79,4 +84,4 @@ function openBody(buf, f, keys) {
   return ctr(keys, makeIv(f.flags, f.id, f.seq, buf.subarray(f.nonceOff, f.nonceOff + NONCE_LEN)), f.body);
 }
 
-module.exports = { LSAP_VERSION, F, HDR_LEN, NONCE_LEN, MAC_LEN, SEC_LEN, deriveKeys, encode, decode, verify, openBody };
+module.exports = { LSAP_VERSION, DEVICE_FAMILY, isLsapType, F, HDR_LEN, NONCE_LEN, MAC_LEN, SEC_LEN, deriveKeys, encode, decode, verify, openBody };

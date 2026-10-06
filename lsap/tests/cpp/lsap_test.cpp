@@ -117,6 +117,9 @@ int main() {
   assert(!rc.find(5) && !rc.find(6));                          // pushed out after REPLAY_WINDOW newer messages
   assert(rc.find(100) && rc.find(100 + REPLAY_WINDOW - 1));
 
+  assert(DEVICE_FAMILY == 0x7 && isLsapType(0x70) && isLsapType(0x72) && isLsapType(0x7F));
+  assert(!isLsapType(0x00) && !isLsapType(0x6F) && !isLsapType(0x80) && !isLsapType(0xF2));
+
   puts("lsap: all tests passed");
   return 0;
 }

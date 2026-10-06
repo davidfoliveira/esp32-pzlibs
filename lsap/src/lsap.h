@@ -28,7 +28,7 @@
 #include <stdint.h>
 #include <stddef.h>
 
-#define LSAP_VERSION "1.0.0"
+#define LSAP_VERSION "1.1.0"
 
 namespace lsap {
 
@@ -39,6 +39,12 @@ constexpr uint8_t F_ACK    = 0x01;   // this frame IS an ACK: "message <seq> was
 constexpr uint8_t F_ENC    = 0x02;   // body encrypted + trailer (nonce + MAC) present
 constexpr uint8_t F_DOWN   = 0x04;   // gateway -> node (clear = node -> gateway)
 constexpr uint8_t F_ACKREQ = 0x08;   // sender wants an ACK for this frame
+
+// Device types carry the device family in the high nibble. A frame is LSAP only if its first
+// byte is in this family; a gateway also carrying other protocols (text frames, ...) uses
+// isLsapType() to tell them apart.
+constexpr uint8_t DEVICE_FAMILY = 0x7;
+inline bool isLsapType(uint8_t type) { return (type >> 4) == DEVICE_FAMILY; }
 
 constexpr size_t HDR_LEN   = 4;
 constexpr size_t NONCE_LEN = 4;

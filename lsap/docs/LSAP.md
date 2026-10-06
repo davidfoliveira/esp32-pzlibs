@@ -27,7 +27,7 @@ They are checked by [`tests/`](../tests); see the [README](../README.md) for usi
 
 | Field | Meaning |
 |-------|---------|
-| `type` | Device type: family nibble + type nibble (by convention family `0x7_`, e.g. `0x71`, `0x72`). Says how to read the body; LSAP itself does not interpret it. A receiver ignores types it doesn't handle. |
+| `type` | Device type: family nibble + type nibble. The family is `0x7_` (`DEVICE_FAMILY`; e.g. `0x71`, `0x72`): a frame whose first byte is in another family is not LSAP and a gateway must leave it to whatever else uses the radio. The type says how to read the body; LSAP itself does not interpret it. A receiver ignores types it doesn't handle. |
 | `id` | The **node's** ID, in *both* directions. A gateway→node frame carries the target node's ID, a node→gateway frame the sender's. |
 | `seq` | 8-bit message sequence number. |
 | `flags` | See below. Reserved bits are sent as 0. |

@@ -68,3 +68,9 @@ test('LSAP does not care about the device type; it rejects only what is not a fr
 test('the library is versioned', () => {
   assert.match(lsap.LSAP_VERSION, /^\d+\.\d+\.\d+$/);
 });
+
+test('device family: only 0x7_ first bytes are LSAP', () => {
+  assert.equal(lsap.DEVICE_FAMILY, 0x7);
+  for (const t of [0x70, 0x72, 0x7f]) assert.equal(lsap.isLsapType(t), true);
+  for (const t of [0x00, 0x6f, 0x80, 0xf2]) assert.equal(lsap.isLsapType(t), false);
+});

@@ -6,8 +6,8 @@ encryption layer (**LSAP-ENC**: AES-128-CTR body + a MAC over the whole frame; t
 readable). It is device-agnostic: it never looks inside a message body — what a device puts there is
 defined by that device's own project.
 
-Current version: **1.0.0** — kept in `library.properties`, `package.json`, `LSAP_VERSION` in
-`src/lsap.h` and `js/lsap.js` (bump all four together, and tag the commit `lsap-v1.0.0`).
+Current version: **1.1.0** — kept in `library.properties`, `package.json`, `LSAP_VERSION` in
+`src/lsap.h` and `js/lsap.js` (bump all four together, and tag the commit `lsap-v1.1.0`).
 
 ## Boundaries
 
