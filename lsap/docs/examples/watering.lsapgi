@@ -1,0 +1,300 @@
+{
+  "lsapgi": 1,
+  "name": "watering",
+  "title": "Watering controller",
+  "version": "1.0.0",
+  "types": ["0x72"],
+  "config": [
+    {
+      "key": "topic",
+      "label": "MQTT topic template",
+      "type": "topic",
+      "default": "watering/{id}",
+      "required": true,
+      "help": "Base of all the node's topics, e.g. watering/{id}. May use {id}, the node's id: one installed integration then serves any number of nodes. Commands (valve/N/set ...) need {id} to know which node to address."
+    }
+  ],
+  "uplink": [
+    {
+      "name": "state",
+      "match": [{"byte": 0, "eq": "0x81"}, {"len": ">=8"}],
+      "fields": {
+        "valves": {"at": 1, "type": "u8"},
+        "fault": {"at": 2, "type": "u8", "bits": "0"},
+        "rssi": {"at": 3, "type": "u8", "bits": "7..3", "scale": 4, "offset": -140, "null": 0},
+        "snr": {"at": 3, "type": "u8", "bits": "2..0", "scale": 5, "offset": -20, "null": 0}
+      },
+      "group": {
+        "at": 8,
+        "size": 8,
+        "max": 4,
+        "index": "n",
+        "fields": {"rate": {"at": 0, "type": "f32"}, "volume": {"at": 4, "type": "f32"}}
+      },
+      "publish": [
+        {
+          "each": {"bits": "valves", "as": "n", "value": "on"},
+          "topic": "{topic}/valve/{n}/state",
+          "retain": true,
+          "json": {"value": {"var": "on", "map": {"0": "OFF", "1": "ON"}}}
+        },
+        {"topic": "{topic}/fault", "retain": true, "json": {"value": {"var": "fault", "bool": true}}},
+        {"topic": "{topic}/link", "json": {"rssi": {"var": "rssi"}, "snr": {"var": "snr"}}},
+        {
+          "each": "group",
+          "topic": "{topic}/flow/{n}/volume",
+          "retain": true,
+          "json": {"value": {"var": "volume", "round": 4}}
+        },
+        {"each": "group", "topic": "{topic}/flow/{n}/rate", "json": {"value": {"var": "rate", "round": 4}}}
+      ]
+    },
+    {
+      "name": "flow",
+      "match": [{"byte": 0, "eq": "0x83"}, {"len": ">=10"}],
+      "fields": {
+        "sensor": {"at": 1, "type": "u8"},
+        "rate": {"at": 2, "type": "f32"},
+        "volume": {"at": 6, "type": "f32"}
+      },
+      "publish": [
+        {
+          "topic": "{topic}/flow/{sensor}/volume",
+          "retain": true,
+          "json": {"value": {"var": "volume", "round": 4}}
+        },
+        {"topic": "{topic}/flow/{sensor}/rate", "json": {"value": {"var": "rate", "round": 4}}}
+      ]
+    },
+    {
+      "name": "result",
+      "match": [{"byte": 0, "eq": "0x82"}, {"len": ">=5"}],
+      "fields": {
+        "op": {"at": 2, "type": "u8"},
+        "result": {"at": 3, "type": "u8", "enum": {"0": "OK", "1": "BAD_ARG", "2": "DENIED", "3": "UNSUPPORTED"}},
+        "valves": {"at": 4, "type": "u8"}
+      },
+      "publish": [
+        {
+          "each": {"bits": "valves", "as": "n", "value": "on"},
+          "topic": "{topic}/valve/{n}/state",
+          "retain": true,
+          "json": {"value": {"var": "on", "map": {"0": "OFF", "1": "ON"}}}
+        },
+        {"topic": "{topic}/result", "json": {"op": {"var": "op"}, "result": {"var": "result"}}}
+      ]
+    }
+  ],
+  "downlink": [
+    {
+      "name": "valve_set",
+      "topic": "{topic}/valve/{n}/set",
+      "vars": {"n": {"min": 1, "max": 8}},
+      "payload": [
+        {"var": "on", "from": "value", "as": "bool", "bare": true},
+        {"var": "ttl", "from": "ttl", "as": "int", "min": 0, "max": 65535, "default": 0}
+      ],
+      "body": ["0x01", {"var": "n"}, {"var": "on"}, {"var": "ttl", "type": "u16"}]
+    },
+    {
+      "name": "flow_reset",
+      "topic": "{topic}/flow/{n}/reset",
+      "vars": {"n": {"min": 1, "max": 4}},
+      "payload": [{"var": "go", "from": "value", "as": "bool", "bare": true}],
+      "requires": "go",
+      "body": ["0x04", {"var": "n"}]
+    },
+    {"name": "close_all", "topic": "{topic}/cmd/close_all", "body": ["0x02"]},
+    {"name": "get_state", "topic": "{topic}/cmd/get_state", "body": ["0x03"]}
+  ],
+  "tests": [
+    {
+      "name": "routine STATE: no sets, no flow topics",
+      "uplink": {
+        "id": 1,
+        "seq": 96,
+        "body": "810000862f010000",
+        "publish": [
+          {"topic": "watering/1/valve/1/state", "payload": "{\"value\":\"OFF\"}", "retain": true},
+          {"topic": "watering/1/valve/2/state", "payload": "{\"value\":\"OFF\"}", "retain": true},
+          {"topic": "watering/1/valve/3/state", "payload": "{\"value\":\"OFF\"}", "retain": true},
+          {"topic": "watering/1/valve/4/state", "payload": "{\"value\":\"OFF\"}", "retain": true},
+          {"topic": "watering/1/valve/5/state", "payload": "{\"value\":\"OFF\"}", "retain": true},
+          {"topic": "watering/1/valve/6/state", "payload": "{\"value\":\"OFF\"}", "retain": true},
+          {"topic": "watering/1/valve/7/state", "payload": "{\"value\":\"OFF\"}", "retain": true},
+          {"topic": "watering/1/valve/8/state", "payload": "{\"value\":\"OFF\"}", "retain": true},
+          {"topic": "watering/1/fault", "payload": "{\"value\":false}", "retain": true},
+          {"topic": "watering/1/link", "payload": "{\"rssi\":-76,\"snr\":10}"}
+        ]
+      }
+    },
+    {
+      "name": "STATE after boot: 'booted' flag, link byte 0 (no link topic), two flow sets",
+      "uplink": {
+        "id": 1,
+        "seq": 1,
+        "body": "810002000300000000000000e4a58d4300000000e8326245",
+        "publish": [
+          {"topic": "watering/1/valve/1/state", "payload": "{\"value\":\"OFF\"}", "retain": true},
+          {"topic": "watering/1/valve/2/state", "payload": "{\"value\":\"OFF\"}", "retain": true},
+          {"topic": "watering/1/valve/3/state", "payload": "{\"value\":\"OFF\"}", "retain": true},
+          {"topic": "watering/1/valve/4/state", "payload": "{\"value\":\"OFF\"}", "retain": true},
+          {"topic": "watering/1/valve/5/state", "payload": "{\"value\":\"OFF\"}", "retain": true},
+          {"topic": "watering/1/valve/6/state", "payload": "{\"value\":\"OFF\"}", "retain": true},
+          {"topic": "watering/1/valve/7/state", "payload": "{\"value\":\"OFF\"}", "retain": true},
+          {"topic": "watering/1/valve/8/state", "payload": "{\"value\":\"OFF\"}", "retain": true},
+          {"topic": "watering/1/fault", "payload": "{\"value\":false}", "retain": true},
+          {"topic": "watering/1/flow/1/volume", "payload": "{\"value\":283.296}", "retain": true},
+          {"topic": "watering/1/flow/2/volume", "payload": "{\"value\":3619.1816}", "retain": true},
+          {"topic": "watering/1/flow/1/rate", "payload": "{\"value\":0}"},
+          {"topic": "watering/1/flow/2/rate", "payload": "{\"value\":0}"}
+        ]
+      }
+    },
+    {
+      "name": "STATE with valve 2 on and two sensors",
+      "uplink": {
+        "id": 1,
+        "seq": 7,
+        "body": "8102005b40e20100a470454103d55d470000000000509a44",
+        "publish": [
+          {"topic": "watering/1/valve/1/state", "payload": "{\"value\":\"OFF\"}", "retain": true},
+          {"topic": "watering/1/valve/2/state", "payload": "{\"value\":\"ON\"}", "retain": true},
+          {"topic": "watering/1/valve/3/state", "payload": "{\"value\":\"OFF\"}", "retain": true},
+          {"topic": "watering/1/valve/4/state", "payload": "{\"value\":\"OFF\"}", "retain": true},
+          {"topic": "watering/1/valve/5/state", "payload": "{\"value\":\"OFF\"}", "retain": true},
+          {"topic": "watering/1/valve/6/state", "payload": "{\"value\":\"OFF\"}", "retain": true},
+          {"topic": "watering/1/valve/7/state", "payload": "{\"value\":\"OFF\"}", "retain": true},
+          {"topic": "watering/1/valve/8/state", "payload": "{\"value\":\"OFF\"}", "retain": true},
+          {"topic": "watering/1/fault", "payload": "{\"value\":false}", "retain": true},
+          {"topic": "watering/1/link", "payload": "{\"rssi\":-96,\"snr\":-5}"},
+          {"topic": "watering/1/flow/1/volume", "payload": "{\"value\":56789.0117}", "retain": true},
+          {"topic": "watering/1/flow/2/volume", "payload": "{\"value\":1234.5}", "retain": true},
+          {"topic": "watering/1/flow/1/rate", "payload": "{\"value\":12.34}"},
+          {"topic": "watering/1/flow/2/rate", "payload": "{\"value\":0}"}
+        ]
+      }
+    },
+    {
+      "name": "FLOW, sensor 1",
+      "uplink": {
+        "id": 1,
+        "seq": 9,
+        "body": "8301a470454103d55d47",
+        "publish": [
+          {"topic": "watering/1/flow/1/volume", "payload": "{\"value\":56789.0117}", "retain": true},
+          {"topic": "watering/1/flow/1/rate", "payload": "{\"value\":12.34}"}
+        ]
+      }
+    },
+    {
+      "name": "RESULT piggybacked in an ACK: valve states and the result",
+      "uplink": {
+        "id": 1,
+        "seq": 0,
+        "body": "822a010002",
+        "publish": [
+          {"topic": "watering/1/valve/1/state", "payload": "{\"value\":\"OFF\"}", "retain": true},
+          {"topic": "watering/1/valve/2/state", "payload": "{\"value\":\"ON\"}", "retain": true},
+          {"topic": "watering/1/valve/3/state", "payload": "{\"value\":\"OFF\"}", "retain": true},
+          {"topic": "watering/1/valve/4/state", "payload": "{\"value\":\"OFF\"}", "retain": true},
+          {"topic": "watering/1/valve/5/state", "payload": "{\"value\":\"OFF\"}", "retain": true},
+          {"topic": "watering/1/valve/6/state", "payload": "{\"value\":\"OFF\"}", "retain": true},
+          {"topic": "watering/1/valve/7/state", "payload": "{\"value\":\"OFF\"}", "retain": true},
+          {"topic": "watering/1/valve/8/state", "payload": "{\"value\":\"OFF\"}", "retain": true},
+          {"topic": "watering/1/result", "payload": "{\"op\":1,\"result\":\"OK\"}"}
+        ]
+      }
+    },
+    {
+      "name": "RESULT DENIED",
+      "uplink": {
+        "id": 1,
+        "seq": 0,
+        "body": "822b010200",
+        "publish": [
+          {"topic": "watering/1/valve/1/state", "payload": "{\"value\":\"OFF\"}", "retain": true},
+          {"topic": "watering/1/valve/2/state", "payload": "{\"value\":\"OFF\"}", "retain": true},
+          {"topic": "watering/1/valve/3/state", "payload": "{\"value\":\"OFF\"}", "retain": true},
+          {"topic": "watering/1/valve/4/state", "payload": "{\"value\":\"OFF\"}", "retain": true},
+          {"topic": "watering/1/valve/5/state", "payload": "{\"value\":\"OFF\"}", "retain": true},
+          {"topic": "watering/1/valve/6/state", "payload": "{\"value\":\"OFF\"}", "retain": true},
+          {"topic": "watering/1/valve/7/state", "payload": "{\"value\":\"OFF\"}", "retain": true},
+          {"topic": "watering/1/valve/8/state", "payload": "{\"value\":\"OFF\"}", "retain": true},
+          {"topic": "watering/1/result", "payload": "{\"op\":1,\"result\":\"DENIED\"}"}
+        ]
+      }
+    },
+    {
+      "name": "an unknown opcode matches nothing (published raw by the gateway)",
+      "uplink": {"id": 1, "body": "84", "unmatched": true}
+    },
+    {
+      "name": "another topic template, another node",
+      "config": {"topic": "garden/{id}/water"},
+      "uplink": {
+        "id": 7,
+        "body": "83020000000000000000",
+        "publish": [
+          {"topic": "garden/7/water/flow/2/volume", "payload": "{\"value\":0}", "retain": true},
+          {"topic": "garden/7/water/flow/2/rate", "payload": "{\"value\":0}"}
+        ]
+      }
+    },
+    {
+      "name": "valve 2 on for 10 minutes",
+      "downlink": {
+        "topic": "watering/1/valve/2/set",
+        "payload": "{\"value\":\"ON\",\"ttl\":600}",
+        "id": 1,
+        "type": "0x72",
+        "body": "0102015802"
+      }
+    },
+    {
+      "name": "valve 3 off, bare payload",
+      "downlink": {"topic": "watering/1/valve/3/set", "payload": "off", "id": 1, "body": "0103000000"}
+    },
+    {
+      "name": "valve on, bare 1, no ttl",
+      "downlink": {"topic": "watering/4/valve/1/set", "payload": "1", "id": 4, "body": "0101010000"}
+    },
+    {
+      "name": "ttl is clamped",
+      "downlink": {
+        "topic": "watering/1/valve/1/set",
+        "payload": "{\"value\":true,\"ttl\":99999}",
+        "id": 1,
+        "body": "010101ffff"
+      }
+    },
+    {
+      "name": "flow sensor 2 reset",
+      "downlink": {"topic": "watering/1/flow/2/reset", "payload": "true", "id": 1, "body": "0402"}
+    },
+    {
+      "name": "a non-truthy reset is ignored",
+      "downlink": {"topic": "watering/1/flow/2/reset", "payload": "no", "ignored": true}
+    },
+    {
+      "name": "close all",
+      "downlink": {"topic": "watering/1/cmd/close_all", "payload": "", "id": 1, "body": "02"}
+    },
+    {
+      "name": "get state",
+      "downlink": {"topic": "watering/1/cmd/get_state", "payload": "x", "id": 1, "body": "03"}
+    },
+    {
+      "name": "valve 9 does not exist",
+      "downlink": {"topic": "watering/1/valve/9/set", "payload": "on", "ignored": true}
+    },
+    {
+      "name": "valve 0 does not exist",
+      "downlink": {"topic": "watering/1/valve/0/set", "payload": "on", "ignored": true}
+    },
+    {
+      "name": "a node id that is not a number is ignored",
+      "downlink": {"topic": "watering/abc/valve/1/set", "payload": "on", "ignored": true}
+    }
+  ]
+}

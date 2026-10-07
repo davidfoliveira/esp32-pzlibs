@@ -1,0 +1,169 @@
+{
+  "lsapgi": 1,
+  "name": "climate",
+  "title": "Climate sensor (example)",
+  "version": "1.0.0",
+  "types": ["0x71"],
+  "config": [
+    {
+      "key": "topic",
+      "label": "MQTT topic template",
+      "type": "topic",
+      "default": "climate/{id}",
+      "required": true,
+      "help": "Base of the node's topics; may use {id}."
+    },
+    {
+      "key": "site",
+      "label": "Site name",
+      "type": "string",
+      "default": "home",
+      "help": "Sent inside the info payload."
+    },
+    {
+      "key": "interval",
+      "label": "Report interval (s)",
+      "type": "number",
+      "default": 60,
+      "min": 10,
+      "max": 3600,
+      "help": "Shown in the info payload."
+    }
+  ],
+  "uplink": [
+    {
+      "name": "reading",
+      "match": [{"type": "0x71"}, {"byte": 0, "eq": "0x10"}, {"len": "=9"}],
+      "fields": {
+        "temp": {"at": 1, "type": "i16", "scale": 0.01},
+        "hum": {"at": 3, "type": "u16", "scale": 0.1, "null": 65535},
+        "batt": {"at": 5, "type": "u8", "scale": 0.02, "offset": 1.8},
+        "mode": {"at": 6, "type": "u8", "bits": "1..0", "enum": {"0": "idle", "1": "sampling", "2": "alarm"}},
+        "charging": {"at": 6, "type": "u8", "bits": "7"},
+        "uptime": {"at": 7, "type": "u16"}
+      },
+      "publish": [
+        {"topic": "{topic}/temperature", "retain": true, "json": {"value": {"var": "temp", "round": 2}}},
+        {"topic": "{topic}/humidity", "retain": true, "json": {"value": {"var": "hum", "round": 1}}},
+        {
+          "topic": "{topic}/battery",
+          "json": {"value": {"var": "batt", "round": 2}, "charging": {"var": "charging", "bool": true}}
+        },
+        {"topic": "{topic}/mode/{mode}", "payload": "1"},
+        {
+          "topic": "{topic}/uptime",
+          "json": {"seconds": {"var": "uptime"}, "node": {"var": "id"}, "seq": {"var": "seq"}}
+        },
+        {"topic": "{topic}/info", "payload": "site={site} interval={interval}s"}
+      ]
+    },
+    {
+      "name": "history",
+      "match": [{"byte": 0, "eq": "0x11"}, {"len": ">=2"}],
+      "fields": {"count": {"at": 1, "type": "u8"}},
+      "group": {"at": 2, "size": 2, "max": 8, "index": "i", "fields": {"t": {"at": 0, "type": "i16", "scale": 0.01}}},
+      "publish": [
+        {"each": "group", "topic": "{topic}/history/{i}", "json": {"t": {"var": "t", "round": 2}}},
+        {"when": {"count": ">=1"}, "topic": "{topic}/history/last", "payload": "updated"}
+      ]
+    }
+  ],
+  "downlink": [
+    {
+      "name": "set_interval",
+      "topic": "{topic}/cmd/interval",
+      "payload": [{"var": "secs", "from": "value", "as": "int", "min": 10, "max": 3600, "default": 60, "bare": true}],
+      "body": ["0x20", {"var": "secs", "type": "u16"}]
+    },
+    {"name": "identify", "topic": "{topic}/cmd/identify", "ackreq": false, "body": ["0x21"]},
+    {
+      "name": "set_offset",
+      "topic": "{topic}/cmd/offset/{ch}",
+      "vars": {"ch": {"min": 0, "max": 3}},
+      "payload": [{"var": "centi", "from": "value", "as": "int", "min": 0, "max": 255, "default": 0, "bare": true}],
+      "body": ["0x22", {"var": "ch"}, {"var": "centi", "type": "i16"}]
+    }
+  ],
+  "tests": [
+    {
+      "name": "a reading",
+      "uplink": {
+        "id": 5,
+        "seq": 3,
+        "body": "10c40964026481100e",
+        "publish": [
+          {"topic": "climate/5/temperature", "payload": "{\"value\":25}", "retain": true},
+          {"topic": "climate/5/humidity", "payload": "{\"value\":61.2}", "retain": true},
+          {"topic": "climate/5/battery", "payload": "{\"value\":3.8,\"charging\":true}"},
+          {"topic": "climate/5/mode/sampling", "payload": "1"},
+          {"topic": "climate/5/uptime", "payload": "{\"seconds\":3600,\"node\":5,\"seq\":3}"},
+          {"topic": "climate/5/info", "payload": "site=home interval=60s"}
+        ]
+      }
+    },
+    {
+      "name": "humidity 0xFFFF means not measured: no humidity topic, negative temperature",
+      "uplink": {
+        "id": 5,
+        "body": "1018fcffff64000000",
+        "publish": [
+          {"topic": "climate/5/temperature", "payload": "{\"value\":-10}", "retain": true},
+          {"topic": "climate/5/battery", "payload": "{\"value\":3.8,\"charging\":false}"},
+          {"topic": "climate/5/mode/idle", "payload": "1"},
+          {"topic": "climate/5/uptime", "payload": "{\"seconds\":0,\"node\":5,\"seq\":0}"},
+          {"topic": "climate/5/info", "payload": "site=home interval=60s"}
+        ]
+      }
+    },
+    {
+      "name": "history with two samples",
+      "uplink": {
+        "id": 5,
+        "body": "1102c4096aff",
+        "publish": [
+          {"topic": "climate/5/history/1", "payload": "{\"t\":25}"},
+          {"topic": "climate/5/history/2", "payload": "{\"t\":-1.5}"},
+          {"topic": "climate/5/history/last", "payload": "updated"}
+        ]
+      }
+    },
+    {"name": "history with none: nothing published", "uplink": {"id": 5, "body": "1100", "publish": []}},
+    {"name": "too short for a reading: published raw", "uplink": {"id": 5, "body": "1001", "unmatched": true}},
+    {
+      "name": "settings change the topics and the info text",
+      "config": {"topic": "x/{id}", "site": "cabin", "interval": 120},
+      "uplink": {
+        "id": 2,
+        "body": "10c40964026481100e",
+        "publish": [
+          {"topic": "x/2/temperature", "payload": "{\"value\":25}", "retain": true},
+          {"topic": "x/2/humidity", "payload": "{\"value\":61.2}", "retain": true},
+          {"topic": "x/2/battery", "payload": "{\"value\":3.8,\"charging\":true}"},
+          {"topic": "x/2/mode/sampling", "payload": "1"},
+          {"topic": "x/2/uptime", "payload": "{\"seconds\":3600,\"node\":2,\"seq\":0}"},
+          {"topic": "x/2/info", "payload": "site=cabin interval=120s"}
+        ]
+      }
+    },
+    {
+      "name": "set the interval",
+      "downlink": {"topic": "climate/5/cmd/interval", "payload": "120", "id": 5, "type": "0x71", "body": "207800"}
+    },
+    {
+      "name": "the interval is clamped",
+      "downlink": {"topic": "climate/5/cmd/interval", "payload": "5", "id": 5, "body": "200a00"}
+    },
+    {
+      "name": "identify is sent without asking for an ACK",
+      "downlink": {"topic": "climate/9/cmd/identify", "payload": "", "id": 9, "body": "21", "ackreq": false}
+    },
+    {
+      "name": "offset for channel 2",
+      "downlink": {"topic": "climate/5/cmd/offset/2", "payload": "50", "id": 5, "body": "22023200"}
+    },
+    {
+      "name": "channel 4 does not exist",
+      "downlink": {"topic": "climate/5/cmd/offset/4", "payload": "50", "ignored": true}
+    }
+  ]
+}

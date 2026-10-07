@@ -15,6 +15,7 @@ Current version: **1.1.0** — kept in `library.properties`, `package.json`, `LS
 |-------|----------------|
 | LSAP — frame, flags, `seq`, ACK/ACKREQ, retries, duplicates ([docs/LSAP.md](docs/LSAP.md)) | this library |
 | Encryption over LSAP ([docs/LSAP-ENC.md](docs/LSAP-ENC.md)) | this library |
+| How a gateway turns a device's bodies into MQTT topics/JSON and back: **LSAPGI** integration files ([docs/LSAPGI.md](docs/LSAPGI.md), with [examples](docs/examples/)) | the specification lives here; files are written per device and installed on a gateway |
 | What a device sends in the body, and which messages it answers | **the device's own project** |
 | A gateway's bridging to MQTT/serial/…, a node's radio handling | **the project using the library** |
 
@@ -28,7 +29,8 @@ src/lsap.h, lsap.cpp      frame codec, encryption/MAC layer, duplicate cache (Se
 src/lsap_crypto.cpp       HMAC-SHA256 + AES-128-CTR on the ESP32 (mbedtls) — the one platform file
 package.json, js/         the same codec + encryption layer for Node.js (lsap.js) and a gateway-side
                           endpoint for one node: seq, retry-until-ACK, ACKing, dedupe (link.js)
-docs/                     the protocol specifications
+docs/                     the protocol specifications; LSAPGI.md (the integration file format and a guide to
+                          writing one) with two validated example integrations in docs/examples/
 tests/                    C++ and Node tests (known-answer frames are checked in both)
 ```
 
